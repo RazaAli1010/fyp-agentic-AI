@@ -11,7 +11,7 @@ import {
   FiArrowRight
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import authService from '../services/authService';
+import authAPI from '../services/auth.api';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -94,7 +94,7 @@ const Login = () => {
     }
     setIsLoading(true);
     try {
-      const response = await authService.login(formData);
+      const response = await authAPI.login(formData);
       login(response.data.tokens, response.data.user, rememberMe);
       toast.success(`Welcome back, ${response.data.user.name || response.data.user.username}! 🎉`, { duration: 2000, icon: '👋' });
       setTimeout(() => { navigate('/dashboard'); }, 500);
