@@ -1,6 +1,10 @@
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_URL, STORAGE_KEYS, HTTP_STATUS } from "@utils/constants.js";
+import {
+  getStorageItem,
+  setStorageItem,
+  removeStorageItem,
+} from "@utils/helpers";
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -12,15 +16,15 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token =
-      localStorage.getItem("accessToken") ||
-      sessionStorage.getItem("accessToken");
+    const token = getStorageItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 apiClient.interceptors.response.use(
@@ -28,28 +32,33 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === HTTP_STATUS.UNAUTHORIZED &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken =
-          localStorage.getItem("refreshToken") ||
-          sessionStorage.getItem("refreshToken");
+        const refreshToken = getStorageItem(STORAGE_KEYS.REFRESH_TOKEN);
+
+        if (!refreshToken) {
+          throw new Error("No refresh token available");
+        }
+
         const response = await axios.post(`${API_URL}/auth/refresh-token`, {
           refreshToken,
         });
 
         const { accessToken } = response.data.data;
-        const storage = localStorage.getItem("refreshToken")
-          ? localStorage
-          : sessionStorage;
-        storage.setItem("accessToken", accessToken);
+        setStorageItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        localStorage.clear();
-        sessionStorage.clear();
+        removeStorageItem(STORAGE_KEYS.ACCESS_TOKEN);
+        removeStorageItem(STORAGE_KEYS.REFRESH_TOKEN);
+        removeStorageItem(STORAGE_KEYS.USER);
+
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
@@ -58,5 +67,21 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const setAuthToken = (token) => {
+  if (token) {
+    apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setStorageItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+  } else {
+    delete apiClient.defaults.headers.common["Authorization"];
+    removeStorageItem(STORAGE_KEYS.ACCESS_TOKEN);
+  }
+};
+
+export const removeAuthToken = () => {
+  delete apiClient.defaults.headers.common["Authorization"];
+  removeStorageItem(STORAGE_KEYS.ACCESS_TOKEN);
+  removeStorageItem(STORAGE_KEYS.REFRESH_TOKEN);
+};
 
 export default apiClient;
