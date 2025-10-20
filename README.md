@@ -1,4 +1,4 @@
-# AI Startup Platform
+# A Multi-Agent AI System for Automating Startup workflows
 
 A comprehensive AI-powered platform designed to help startups automate their business planning, investor relations, and strategic decision-making using advanced Claude AI integration.
 
@@ -670,6 +670,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Authors
 
 - **Raza Ali** - Team Leader - [GitHub](https://github.com/RazaAli1010)
+- **Sami Ur Rehman** 
+- **Shahbaz Hassan** 
 
 ## Acknowledgments
 
@@ -691,3 +693,4 @@ For issues, questions, or contributions:
 **Version**: 1.0.0
 **Last Updated**: 2025
 **Status**: Active Development
+
