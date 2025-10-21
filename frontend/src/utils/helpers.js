@@ -1,5 +1,8 @@
 import { VALIDATION_RULES, STORAGE_KEYS } from "./constants.js";
 
+// Re-export STORAGE_KEYS for convenience
+export { STORAGE_KEYS };
+
 export const validateEmail = (email) => {
   return VALIDATION_RULES.EMAIL_REGEX.test(email);
 };

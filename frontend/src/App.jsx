@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@contexts/AuthContext";
-import { ProjectProvider } from "@contexts/ProjectContext";
+import { ProjectProvider } from "@contexts/projectcontext";
 import Navbar from "@components/shared/Navbar";
 import Sidebar from "@components/shared/Sidebar";
 import ErrorBoundary from "@components/shared/ErrorBoundary";

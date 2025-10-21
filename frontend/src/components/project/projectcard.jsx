@@ -14,7 +14,7 @@ import {
   FiExternalLink,
   FiClock
 } from 'react-icons/fi';
-import { useProjectContext } from '../../contexts/projectcontext';
+import { useProjectContext } from '@contexts/projectcontext';
 
 const ProjectCard = ({ project, onEdit, onDelete, onDuplicate }) => {
   const navigate = useNavigate();

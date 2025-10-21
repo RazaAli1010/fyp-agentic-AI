@@ -9,7 +9,7 @@ import {
   FiArrowLeft
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import authAPI from '../services/auth.api';
+import authAPI from '@services/auth.api';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

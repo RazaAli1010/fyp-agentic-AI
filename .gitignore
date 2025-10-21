@@ -72,4 +72,5 @@ yarn-debug.log*
 
 # Misc
 .eslintcache
-.prettierignore
+.
+nul

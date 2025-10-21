@@ -11,12 +11,12 @@ import {
   FiArrowRight,
   FiBarChart2
 } from 'react-icons/fi';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import Loader from '../common/Loader';
+import Button from '@components/common/Button';
+import Card from '@components/common/Card';
+import Loader from '@components/common/Loader';
 import ProjectCard from './ProjectCard';
-import { useProjectContext } from '../../contexts/projectcontext';
-import { useAuth } from '../../context/AuthContext';
+import { useProjectContext } from '@contexts/projectcontext';
+import { useAuth } from '@hooks/useAuth';
 
 const Dashboard = () => {
   const navigate = useNavigate();

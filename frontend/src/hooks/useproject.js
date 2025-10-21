@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import projectAPI from '../services/project.api';
+import projectAPI from '@services/project.api';
 import { toast } from 'react-hot-toast';
 
 /**
@@ -318,3 +318,4 @@ const useProject = (projectId = null) => {
 };
 
 export default useProject;
+export { useProject };

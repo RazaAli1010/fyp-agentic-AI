@@ -50,13 +50,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (credentials) => {
-    setIsLoading(true);
-    setError(null);
-
+  const login = (tokens, userData, rememberMe = false) => {
     try {
-      const response = await authAPI.login(credentials);
-      const { accessToken, refreshToken, user: userData } = response.data.data;
+      const { accessToken, refreshToken } = tokens;
 
       setAuthToken(accessToken);
       setStorageItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
@@ -66,16 +62,11 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setIsAuthenticated(true);
 
-      toast.success(`Welcome back, ${userData.name || userData.username}!`);
-
-      return response.data;
+      return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorMessage = error?.message || 'Login failed';
       setError(errorMessage);
-      toast.error(errorMessage);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 

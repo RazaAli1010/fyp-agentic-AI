@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import projectAPI from '../services/project.api';
+import projectAPI from '@services/project.api';
 import { toast } from 'react-hot-toast';
 
 const ProjectContext = createContext();

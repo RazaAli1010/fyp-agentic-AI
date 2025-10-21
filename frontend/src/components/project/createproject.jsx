@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiArrowLeft, FiSave, FiX } from 'react-icons/fi';
-import Button from '../common/Button';
-import Input from '../common/Input';
-import Card from '../common/Card';
-import { useProjectContext } from '../../contexts/projectcontext';
+import Button from '@components/common/Button';
+import Input from '@components/common/Input';
+import Card from '@components/common/Card';
+import { useProjectContext } from '@contexts/projectcontext';
 import { toast } from 'react-hot-toast';
 
 const CreateProject = () => {

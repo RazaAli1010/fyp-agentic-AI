@@ -11,11 +11,11 @@ import {
   FiX,
   FiEye
 } from 'react-icons/fi';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import Loader from '../common/Loader';
-import Modal from '../common/Modal';
-import { useProject } from '../../hooks/useproject';
+import Button from '@components/common/Button';
+import Card from '@components/common/Card';
+import Loader from '@components/common/Loader';
+import Modal from '@components/common/Modal';
+import { useProject } from '@hooks/useproject';
 import { toast } from 'react-hot-toast';
 
 const VersionHistory = () => {

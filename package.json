@@ -1,0 +1,16 @@
+{
+  "name": "ai-startup-platform",
+  "version": "1.0.0",
+  "description": "AI-powered startup advisory platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build"
+  }
+}

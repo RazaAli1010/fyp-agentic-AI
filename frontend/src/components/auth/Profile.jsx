@@ -20,8 +20,8 @@ import {
   FiShield
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import authAPI from '../services/auth.api';
-import { useAuth } from '../context/AuthContext';
+import authAPI from '@services/auth.api';
+import { useAuth } from '@hooks/useAuth';
 
 const Profile = () => {
   const navigate = useNavigate();

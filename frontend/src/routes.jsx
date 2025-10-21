@@ -7,11 +7,11 @@ import ForgotPassword from "@components/auth/ForgotPassword";
 import ResetPassword from "@components/auth/ResetPassword";
 import Profile from "@components/auth/Profile";
 
-import Dashboard from "@components/project/Dashboard";
-import ProjectCard from "@components/project/ProjectCard";
-import CreateProject from "@components/project/CreateProject";
-import ProjectDetails from "@components/project/ProjectDetails";
-import VersionHistory from "@components/project/VersionHistory";
+import Dashboard from "@components/project/dashboard";
+import ProjectCard from "@components/project/projectcard";
+import CreateProject from "@components/project/createproject";
+import ProjectDetails from "@components/project/projectdetails";
+import VersionHistory from "@components/project/versionhistory";
 
 import ChatInterface from "@components/chat/ChatInterface";
 import InvestorObjections from "@components/chat/InvestorObjections";
