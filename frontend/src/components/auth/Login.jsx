@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiMail, 
-  FiLock, 
-  FiEye, 
-  FiEyeOff, 
-  FiAlertCircle, 
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiAlertCircle,
   FiCheckCircle,
   FiArrowRight
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import authAPI from '@services/auth.api';
 import { useAuth } from '@hooks/useAuth';
 
 const Login = () => {
@@ -94,14 +93,11 @@ const Login = () => {
     }
     setIsLoading(true);
     try {
-      const response = await authAPI.login(formData);
-      login(response.data.tokens, response.data.user, rememberMe);
-      toast.success(`Welcome back, ${response.data.user.name || response.data.user.username}! 🎉`, { duration: 2000, icon: '👋' });
-      setTimeout(() => { navigate('/dashboard'); }, 500);
+      await login(formData);
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-      toast.error(errorMessage, { duration: 4000, icon: '❌' });
       if (error.response?.status === 401) {
         setErrors({ emailOrUsername: 'Invalid credentials', password: 'Invalid credentials' });
         setTouched({ emailOrUsername: true, password: true });

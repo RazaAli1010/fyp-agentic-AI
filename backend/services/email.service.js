@@ -12,7 +12,13 @@ const EMAIL_CONFIG = {
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
-  }
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+  requireTLS: true,
+  connectionTimeout: 10000,
+  greetingTimeout: 5000
 };
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@startup-ai.com';
@@ -782,9 +788,21 @@ const sendBulkEmail = async (recipients, subject, content) => {
 };
 
 // Initialize and verify connection on module load
-verifyConnection().catch(error => {
-  console.error('Email service initialization failed:', error.message);
-});
+let emailServiceReady = false;
+
+verifyConnection()
+  .then(() => {
+    emailServiceReady = true;
+  })
+  .catch(error => {
+    console.error('Email service initialization failed:', error.message);
+    console.warn('⚠️  Email functionality will be disabled. Please check your email configuration.');
+  });
+
+/**
+ * Check if email service is ready
+ */
+const isEmailServiceReady = () => emailServiceReady;
 
 module.exports = {
   // Core email functions
@@ -798,13 +816,14 @@ module.exports = {
   sendAccountDeactivatedEmail,
   sendAccountReactivatedEmail,
   sendLoginNotificationEmail,
-  
+
   // Utility functions
   sendTestEmail,
   sendBulkEmail,
   verifyConnection,
   isValidEmail,
-  
+  isEmailServiceReady,
+
   // Template utilities
   getBaseTemplate,
   stripHtml

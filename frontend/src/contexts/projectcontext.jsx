@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import { createContext, useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import projectAPI from '@services/project.api';
 import { toast } from 'react-hot-toast';
 
@@ -34,25 +34,35 @@ export const ProjectProvider = ({ children }) => {
     hasMore: false
   });
 
+  // Memoize filters to prevent unnecessary re-renders
+  const memoizedFilters = useMemo(() => filters, [
+    filters.status,
+    filters.stage,
+    filters.search,
+    filters.sortBy,
+    filters.sortOrder,
+    filters.page,
+    filters.limit
+  ]);
+
   // Fetch all projects
   const fetchProjects = useCallback(async (customFilters = {}) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const params = { ...filters, ...customFilters };
+      const params = { ...memoizedFilters, ...customFilters };
       const response = await projectAPI.getProjects(params);
 
       setProjects(response.data.projects);
       setPagination(response.data.pagination);
     } catch (err) {
-      console.error('Fetch projects error:', err);
       setError(err.response?.data?.message || 'Failed to fetch projects');
       toast.error('Failed to load projects');
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [memoizedFilters]);
 
   // Fetch single project
   const fetchProjectById = useCallback(async (projectId) => {

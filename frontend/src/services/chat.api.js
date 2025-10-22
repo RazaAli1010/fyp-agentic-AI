@@ -1,158 +1,136 @@
 import apiClient from "./api.js";
 
 const chatAPI = {
-  getConversations: async (projectId = null) => {
-    const url = projectId
-      ? `/chat/conversations?projectId=${projectId}`
-      : "/chat/conversations";
-    const response = await apiClient.get(url);
+  // Get chat history for a project
+  getChatHistory: async (projectId) => {
+    const response = await apiClient.get(`/chat/history/${projectId}`);
+    console.log("getChatHistory raw axios response:", response);
+    console.log("getChatHistory response.data:", response.data);
     return response.data;
   },
 
-  getConversationById: async (conversationId) => {
-    const response = await apiClient.get(
-      `/chat/conversations/${conversationId}`
-    );
+  // Get a specific conversation
+  getConversation: async (chatId) => {
+    const response = await apiClient.get(`/chat/conversation/${chatId}`);
     return response.data;
   },
 
-  createConversation: async (data) => {
-    const response = await apiClient.post("/chat/conversations", data);
+  // Delete a conversation
+  deleteConversation: async (chatId) => {
+    const response = await apiClient.delete(`/chat/conversation/${chatId}`);
     return response.data;
   },
 
-  deleteConversation: async (conversationId) => {
-    const response = await apiClient.delete(
-      `/chat/conversations/${conversationId}`
-    );
+  // Send a message (creates conversation if chatId not provided)
+  sendMessage: async (projectId, message, conversationType = "general", chatId = null) => {
+    const payload = {
+      projectId,
+      message,
+      conversationType,
+    };
+
+    // Only include chatId if it has a valid value
+    if (chatId) {
+      payload.chatId = chatId;
+    }
+
+    const response = await apiClient.post("/chat/message", payload);
     return response.data;
   },
 
-  sendMessage: async (conversationId, content, mode = "general") => {
+  // Archive a conversation
+  archiveConversation: async (chatId) => {
+    const response = await apiClient.put(`/chat/conversation/${chatId}/archive`);
+    return response.data;
+  },
+
+  // Pin a message
+  pinMessage: async (chatId, messageId) => {
     const response = await apiClient.post(
-      `/chat/conversations/${conversationId}/messages`,
-      {
-        content,
-        mode,
-      }
+      `/chat/message/${chatId}/${messageId}/pin`
     );
     return response.data;
   },
 
-  getMessages: async (conversationId, page = 1, limit = 50) => {
-    const response = await apiClient.get(
-      `/chat/conversations/${conversationId}/messages`,
-      {
-        params: { page, limit },
-      }
-    );
-    return response.data;
-  },
-
-  updateMessage: async (conversationId, messageId, updates) => {
-    const response = await apiClient.patch(
-      `/chat/conversations/${conversationId}/messages/${messageId}`,
-      updates
-    );
-    return response.data;
-  },
-
-  deleteMessage: async (conversationId, messageId) => {
-    const response = await apiClient.delete(
-      `/chat/conversations/${conversationId}/messages/${messageId}`
-    );
-    return response.data;
-  },
-
-  regenerateResponse: async (conversationId, messageId) => {
+  // Star a message
+  starMessage: async (chatId, messageId) => {
     const response = await apiClient.post(
-      `/chat/conversations/${conversationId}/messages/${messageId}/regenerate`
+      `/chat/message/${chatId}/${messageId}/star`
     );
     return response.data;
   },
 
-  getInvestorObjections: async (projectId) => {
-    const response = await apiClient.get(
-      `/chat/investor-objections/${projectId}`
-    );
-    return response.data;
-  },
-
-  generateInvestorObjections: async (projectId, category = null) => {
+  // Rate a message
+  rateMessage: async (chatId, messageId, rating) => {
     const response = await apiClient.post(
-      `/chat/investor-objections/${projectId}/generate`,
-      {
-        category,
-      }
-    );
-    return response.data;
-  },
-
-  answerInvestorObjection: async (projectId, objectionId) => {
-    const response = await apiClient.post(
-      `/chat/investor-objections/${projectId}/${objectionId}/answer`
-    );
-    return response.data;
-  },
-
-  rateInvestorAnswer: async (projectId, objectionId, rating) => {
-    const response = await apiClient.post(
-      `/chat/investor-objections/${projectId}/${objectionId}/rate`,
+      `/chat/message/${chatId}/${messageId}/rate`,
       { rating }
     );
     return response.data;
   },
 
-  getConversationStats: async () => {
+  // Handle investor objections
+  handleInvestorObjection: async (projectId, objection, customObjection = null) => {
+    const response = await apiClient.post("/chat/investor-objection", {
+      projectId,
+      objection,
+      customObjection,
+    });
+    return response.data;
+  },
+
+  // Get chat statistics
+  getChatStats: async () => {
     const response = await apiClient.get("/chat/stats");
     return response.data;
   },
 
-  searchMessages: async (query, conversationId = null) => {
-    const params = { query };
-    if (conversationId) params.conversationId = conversationId;
-
-    const response = await apiClient.get("/chat/search", { params });
-    return response.data;
-  },
-
-  exportConversation: async (conversationId, format = "json") => {
-    const response = await apiClient.post(
-      `/chat/conversations/${conversationId}/export`,
-      { format }
-    );
-    return response.data;
-  },
-
-  updateConversationTitle: async (conversationId, title) => {
-    const response = await apiClient.patch(
-      `/chat/conversations/${conversationId}`,
-      {
-        title,
-      }
-    );
-    return response.data;
-  },
-
-  pinConversation: async (conversationId) => {
-    const response = await apiClient.patch(
-      `/chat/conversations/${conversationId}/pin`
-    );
-    return response.data;
-  },
-
-  archiveConversation: async (conversationId) => {
-    const response = await apiClient.patch(
-      `/chat/conversations/${conversationId}/archive`
-    );
-    return response.data;
-  },
-
-  getAISuggestions: async (projectId, context) => {
-    const response = await apiClient.post("/chat/suggestions", {
-      projectId,
-      context,
+  // Search chats
+  searchChats: async (query) => {
+    const response = await apiClient.get("/chat/search", {
+      params: { query },
     });
+    return response.data;
+  },
+
+  // Export conversation
+  exportConversation: async (chatId) => {
+    const response = await apiClient.post(`/chat/export/${chatId}`);
+    return response.data;
+  },
+
+  // Get smart suggestions
+  getSmartSuggestions: async (projectId) => {
+    const response = await apiClient.get(`/chat/suggestions/${projectId}`);
+    return response.data;
+  },
+
+  // Get pinned messages
+  getPinnedMessages: async () => {
+    const response = await apiClient.get("/chat/pinned");
+    return response.data;
+  },
+
+  // Add action item
+  addActionItem: async (chatId, text) => {
+    const response = await apiClient.post("/chat/action-item", {
+      chatId,
+      text,
+    });
+    return response.data;
+  },
+
+  // Toggle action item
+  toggleActionItem: async (chatId, actionItemId) => {
+    const response = await apiClient.put(
+      `/chat/action-item/${chatId}/${actionItemId}/toggle`
+    );
+    return response.data;
+  },
+
+  // Generate summary
+  generateSummary: async (chatId) => {
+    const response = await apiClient.post(`/chat/conversation/${chatId}/summary`);
     return response.data;
   },
 };

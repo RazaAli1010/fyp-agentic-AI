@@ -41,11 +41,20 @@ const verifyToken = (token) => {
  * Protects routes by verifying JWT token
  */
 const authenticate = async (req, res, next) => {
+  console.log("\n🔐 === AUTH MIDDLEWARE START ===");
+  console.log("📍 Request URL:", req.url);
+  console.log("📍 Request Method:", req.method);
+  console.log("🔑 Authorization Header:", req.headers.authorization ? "Present" : "Missing");
+  console.log("🍪 Cookies:", req.cookies ? Object.keys(req.cookies) : "No cookies");
+
   try {
     // Extract token from request
     const token = extractToken(req);
+    console.log("🎫 Token extracted:", token ? `${token.substring(0, 20)}...` : "NULL");
 
     if (!token) {
+      console.error("❌ No token found in request");
+      console.log("=== AUTH MIDDLEWARE END (No Token) ===\n");
       return res.status(401).json({
         success: false,
         message: 'Authentication required. Please login to access this resource.'
@@ -53,10 +62,14 @@ const authenticate = async (req, res, next) => {
     }
 
     // Verify token
+    console.log("🔍 Verifying token...");
     const decoded = verifyToken(token);
+    console.log("✅ Token decoded:", { userId: decoded.userId, iat: decoded.iat, exp: decoded.exp });
 
     // Find user by ID from token
+    console.log("👤 Looking for user with ID:", decoded.userId);
     const user = await User.findById(decoded.userId).select('-password -passwordHistory');
+    console.log("👤 User found:", user ? { _id: user._id, username: user.username, email: user.email } : "NULL");
 
     if (!user) {
       return res.status(401).json({
@@ -97,9 +110,15 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     req.token = token;
 
+    console.log("✅ User attached to request");
+    console.log("=== AUTH MIDDLEWARE END (Success) ===\n");
+
     next();
   } catch (error) {
+    console.error("\n❌ === AUTH MIDDLEWARE ERROR ===");
     console.error('Authentication error:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error("=== AUTH MIDDLEWARE ERROR END ===\n");
 
     if (error.message === 'Token has expired') {
       return res.status(401).json({

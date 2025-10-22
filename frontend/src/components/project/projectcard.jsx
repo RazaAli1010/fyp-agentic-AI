@@ -12,7 +12,8 @@ import {
   FiTrendingUp,
   FiArchive,
   FiExternalLink,
-  FiClock
+  FiClock,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { useProjectContext } from '@contexts/projectcontext';
 
@@ -75,6 +76,12 @@ const ProjectCard = ({ project, onEdit, onDelete, onDuplicate }) => {
     e.stopPropagation();
     setShowMenu(false);
     navigate(`/projects/${project._id}`);
+  };
+
+  const handleChatWithAI = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    navigate(`/chat?projectId=${project._id}`);
   };
 
   // Get stage badge color
@@ -352,6 +359,14 @@ const ProjectCard = ({ project, onEdit, onDelete, onDuplicate }) => {
                     >
                       <FiExternalLink className="h-4 w-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
                       <span className="group-hover:text-purple-600 font-medium">View Details</span>
+                    </button>
+
+                    <button
+                      onClick={handleChatWithAI}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 flex items-center gap-3 transition-all duration-200 group"
+                    >
+                      <FiMessageSquare className="h-4 w-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                      <span className="group-hover:text-indigo-600 font-medium">Chat with AI</span>
                     </button>
 
                     <button

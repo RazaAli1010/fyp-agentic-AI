@@ -1,9 +1,18 @@
-const Project = require("../models/Project.js");
+const Project = require("../models/project.js");
 
 /**
  * Build project context for RAG (Retrieval-Augmented Generation)
  */
 const buildProjectContext = async (project) => {
+  console.log("\n🏗️ === RAG SERVICE: buildProjectContext START ===");
+  console.log("📁 Project Input:", project ? {
+    _id: project._id,
+    name: project.name,
+    hasDescription: !!project.description,
+    industry: project.industry,
+    stage: project.stage
+  } : "NULL PROJECT");
+
   try {
     const context = {
       name: project.name,
@@ -12,6 +21,7 @@ const buildProjectContext = async (project) => {
       stage: project.stage,
       targetMarket: project.targetMarket,
     };
+    console.log("✅ Basic context created:", Object.keys(context));
 
     // Add market research data if available
     if (project.marketResearch) {
@@ -19,7 +29,7 @@ const buildProjectContext = async (project) => {
         tam: project.marketResearch.tam,
         sam: project.marketResearch.sam,
         som: project.marketResearch.som,
-        competitors: project.marketResearch.competitors?.slice(0, 5) || [],
+        competitors: project.marketResearch?.competitors?.slice(0, 5) || [],
       };
     }
 
@@ -35,8 +45,8 @@ const buildProjectContext = async (project) => {
     // Add business model if available
     if (project.businessModel) {
       context.businessModel = {
-        revenueStreams: project.businessModel.revenueStreams,
-        pricingStrategy: project.businessModel.pricingStrategy,
+        revenueStreams: project.businessModel?.revenueStreams || [],
+        pricingStrategy: project.businessModel?.pricingStrategy || null,
       };
     }
 
@@ -51,15 +61,21 @@ const buildProjectContext = async (project) => {
     // Add traction/metrics if available
     if (project.traction) {
       context.traction = {
-        users: project.traction.users,
-        revenue: project.traction.revenue,
-        growth: project.traction.growth,
+        users: project.traction?.users || null,
+        revenue: project.traction?.revenue || null,
+        growth: project.traction?.growth || null,
       };
     }
 
+    console.log("✅ Final context keys:", Object.keys(context));
+    console.log("📊 Context size:", JSON.stringify(context).length, "characters");
+    console.log("=== RAG SERVICE: buildProjectContext END ===\n");
     return context;
   } catch (error) {
-    console.error("Error building project context:", error);
+    console.error("❌ === RAG SERVICE ERROR ===");
+    console.error("Error building project context:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("=== RAG SERVICE ERROR END ===\n");
     return null;
   }
 };

@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const path = require("path");
 
 // Loading environment variables from .env file
-dotenv.config({ path: path.join(__dirname, "../../.env") });
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
 /**
  * Validating required environment variables
@@ -24,10 +24,36 @@ const validateEnv = () => {
     missing.forEach((varName) => console.error(`   - ${varName}`));
     process.exit(1);
   }
+
+  // Validate JWT secret strength
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    console.error("❌ JWT_SECRET must be at least 32 characters long for security");
+    process.exit(1);
+  }
+
+  // Validate NODE_ENV values
+  const validEnvs = ['development', 'production', 'test'];
+  if (process.env.NODE_ENV && !validEnvs.includes(process.env.NODE_ENV)) {
+    console.error(`❌ NODE_ENV must be one of: ${validEnvs.join(', ')}`);
+    process.exit(1);
+  }
 };
 
 // Validating on module load
 validateEnv();
+
+/**
+ * Safe parsing functions with fallbacks
+ */
+const safeParseInt = (value, fallback) => {
+  const parsed = parseInt(value);
+  return isNaN(parsed) ? fallback : parsed;
+};
+
+const safeParseFloat = (value, fallback) => {
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? fallback : parsed;
+};
 
 /**
  * Environment Configuration
@@ -35,7 +61,7 @@ validateEnv();
 const config = {
   // Application
   env: process.env.NODE_ENV || "development",
-  port: parseInt(process.env.PORT) || 5000,
+  port: safeParseInt(process.env.PORT, 5000),
   apiPrefix: process.env.API_PREFIX || "/api",
 
   // URLs
@@ -60,16 +86,16 @@ const config = {
   claude: {
     apiKey: process.env.CLAUDE_API_KEY,
     sonnetModel:
-      process.env.CLAUDE_SONNET_MODEL || "claude-sonnet-3-5-20241022",
-    haikuModel: process.env.CLAUDE_HAIKU_MODEL || "claude-haiku-3-5-20241022",
-    maxTokens: parseInt(process.env.CLAUDE_MAX_TOKENS) || 4096,
-    temperature: parseFloat(process.env.CLAUDE_TEMPERATURE) || 0.7,
+      process.env.CLAUDE_SONNET_MODEL || "claude-sonnet-4-5-20250929",
+    haikuModel: process.env.CLAUDE_HAIKU_MODEL || "claude-haiku-4-5",
+    maxTokens: safeParseInt(process.env.CLAUDE_MAX_TOKENS, 4096),
+    temperature: safeParseFloat(process.env.CLAUDE_TEMPERATURE, 0.7),
   },
 
   // Email
   email: {
     host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT) || 587,
+    port: safeParseInt(process.env.EMAIL_PORT, 587),
     secure: process.env.EMAIL_SECURE === "true",
     user: process.env.EMAIL_USER,
     password: process.env.EMAIL_PASSWORD,
@@ -79,22 +105,22 @@ const config = {
 
   // Rate Limiting
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    windowMs: safeParseInt(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+    maxRequests: safeParseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 100),
   },
 
   // File Upload
   upload: {
-    maxSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB
-    allowedTypes: (process.env.ALLOWED_FILE_TYPES || "pdf,doc,docx,txt").split(
-      ","
-    ),
+    maxSize: safeParseInt(process.env.MAX_FILE_SIZE, 10 * 1024 * 1024), // 10MB
+    allowedTypes: (process.env.ALLOWED_FILE_TYPES || "pdf,doc,docx,txt")
+      .split(",")
+      .map(type => type.trim()),
   },
 
   // CORS
   cors: {
     origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",")
+      ? process.env.CORS_ORIGIN.split(",").map(origin => origin.trim())
       : ["http://localhost:3000"],
     credentials: true,
   },

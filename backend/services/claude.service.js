@@ -22,20 +22,32 @@ const generateResponse = async (
   projectContext = null,
   conversationType = "general"
 ) => {
+  console.log("\n🤖 === CLAUDE SERVICE: generateResponse START ===");
+  console.log("📝 User message length:", userMessage?.length || 0);
+  console.log("📚 Conversation history length:", conversationHistory?.length || 0);
+  console.log("📊 Has project context:", !!projectContext);
+  console.log("🎯 Conversation type:", conversationType);
+
   try {
     // Check rate limit
+    console.log("⏳ Checking rate limit...");
     if (!rateLimiter.canMakeRequest()) {
+      console.log("⚠️ Rate limit reached, waiting...");
       await waitForRateLimit();
     }
+    console.log("✅ Rate limit check passed");
 
     // Select appropriate model
     const model = selectModel(userMessage);
+    console.log("🎨 Selected model:", model);
 
     // Build system prompt with context
+    console.log("📄 Building system prompt...");
     const systemPrompt = buildSystemPrompt(
       conversationType.toUpperCase(),
       projectContext
     );
+    console.log("✅ System prompt built, length:", systemPrompt?.length || 0);
 
     // Build messages array
     const messages = [
@@ -45,8 +57,18 @@ const generateResponse = async (
         content: userMessage,
       },
     ];
+    console.log("💬 Messages array built, total messages:", messages.length);
 
     // Make API call
+    console.log("🚀 Making API call to Claude...");
+    console.log("API Params:", {
+      model,
+      max_tokens: DEFAULT_PARAMS.maxTokens,
+      temperature: DEFAULT_PARAMS.temperature,
+      systemPromptLength: systemPrompt?.length,
+      messagesCount: messages.length
+    });
+
     const response = await anthropic.messages.create({
       model,
       max_tokens: DEFAULT_PARAMS.maxTokens,
@@ -54,6 +76,9 @@ const generateResponse = async (
       system: systemPrompt,
       messages,
     });
+
+    console.log("✅ Claude API response received");
+    console.log("📊 Response usage:", response.usage);
 
     // Record request
     rateLimiter.recordRequest();
@@ -63,8 +88,9 @@ const generateResponse = async (
 
     // Extract response content
     const content = response.content[0].text;
+    console.log("✅ Content extracted, length:", content?.length || 0);
 
-    return {
+    const result = {
       content,
       model,
       usage: {
@@ -74,19 +100,38 @@ const generateResponse = async (
       },
       complexity: getQueryComplexity(userMessage),
     };
+
+    console.log("✅ Result prepared:", {
+      hasContent: !!result.content,
+      contentLength: result.content?.length,
+      model: result.model,
+      totalTokens: result.usage.total,
+      complexity: result.complexity
+    });
+    console.log("=== CLAUDE SERVICE: generateResponse END ===\n");
+
+    return result;
   } catch (error) {
-    console.error("Claude API error:", error);
+    console.error("\n❌ === CLAUDE SERVICE ERROR ===");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error status:", error.status);
+    console.error("Error type:", error.type);
+    console.error("Error stack:", error.stack);
+    console.error("Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
     if (error.status === 429) {
       throw new Error("Rate limit exceeded. Please try again in a moment.");
     }
 
     if (error.status === 529) {
+      console.error("=== CLAUDE SERVICE ERROR END (Overloaded) ===\n");
       throw new Error(
         "Claude API is temporarily overloaded. Please try again shortly."
       );
     }
 
+    console.error("=== CLAUDE SERVICE ERROR END ===\n");
     throw new Error("Failed to generate AI response: " + error.message);
   }
 };

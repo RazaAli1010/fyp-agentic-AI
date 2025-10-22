@@ -6,17 +6,13 @@ const mongoose = require("mongoose");
 const connectDatabase = async () => {
   try {
     const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      family: 4,
       maxPoolSize: 10,
       minPoolSize: 2,
       maxIdleTimeMS: 30000,
       retryWrites: true,
       retryReads: true,
-      w: "majority",
     };
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);

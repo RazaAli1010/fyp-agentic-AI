@@ -10,6 +10,7 @@ const { errorHandler, notFound } = require("./middleware/errorHandler.js");
 
 const authRoutes = require("./routes/auth.routes.js");
 const chatRoutes = require("./routes/chat.routes.js");
+const projectRoutes = require("./routes/project.routes.js");
 
 const app = express();
 
@@ -53,19 +54,24 @@ if (config.env === "development") {
 
 const globalLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.maxRequests,
+  max: config.env === "development" ? 1000 : config.rateLimit.maxRequests,
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => config.env === "development", // Skip rate limiting in development
 });
 
-app.use("/api", globalLimiter);
+// Only apply rate limiting in production
+if (config.env !== "development") {
+  app.use("/api", globalLimiter);
+}
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: config.env === "development" ? 100 : 5,
   message: "Too many authentication attempts, please try again later.",
   skipSuccessfulRequests: true,
+  skip: (req) => config.env === "development", // Skip auth rate limiting in development
 });
 
 // Health check route
@@ -80,6 +86,7 @@ app.get("/health", (req, res) => {
 
 app.use(`${config.apiPrefix}/auth`, authLimiter, authRoutes);
 app.use(`${config.apiPrefix}/chat`, chatRoutes);
+app.use(`${config.apiPrefix}/projects`, projectRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({

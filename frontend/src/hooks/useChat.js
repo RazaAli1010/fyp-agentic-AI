@@ -1,329 +1,337 @@
-import { useState, useCallback, useEffect } from "react";
-import { io } from "socket.io-client";
+import { useState, useCallback, useEffect, useRef } from "react";
 import chatAPI from "@services/chat.api.js";
-import { SOCKET_URL } from "@utils/constants.js";
 import { toast } from "react-hot-toast";
-import { getStorageItem, STORAGE_KEYS } from "@utils/helpers.js";
 
-const useChat = (conversationId = null) => {
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [conversations, setConversations] = useState([]);
-  const [currentConversation, setCurrentConversation] = useState(null);
+/**
+ * Custom hook for chat functionality without WebSocket
+ * Uses REST API for all chat operations
+ */
+const useChat = (chatId = null, projectId = null) => {
+  const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [chatHistory, setChatHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
+  const lastFetchedChatId = useRef(null);
 
-  useEffect(() => {
-    const token = getStorageItem(STORAGE_KEYS.ACCESS_TOKEN);
-
-    if (!token) return;
-
-    const newSocket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
-
-    newSocket.on("connect", () => {
-      setIsConnected(true);
-      console.log("Socket connected");
-    });
-
-    newSocket.on("disconnect", () => {
-      setIsConnected(false);
-      console.log("Socket disconnected");
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setIsConnected(false);
-    });
-
-    newSocket.on("message", (message) => {
-      setMessages((prev) => [...prev, message]);
-      setIsTyping(false);
-    });
-
-    newSocket.on("typing", () => {
-      setIsTyping(true);
-    });
-
-    newSocket.on("stop_typing", () => {
-      setIsTyping(false);
-    });
-
-    newSocket.on("message_update", (updatedMessage) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === updatedMessage._id ? updatedMessage : msg
-        )
-      );
-    });
-
-    newSocket.on("error", (error) => {
-      toast.error(error.message || "An error occurred");
-      setIsTyping(false);
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (conversationId) {
-      fetchMessages(conversationId);
-      fetchConversation(conversationId);
-
-      if (socket && isConnected) {
-        socket.emit("join_conversation", conversationId);
-      }
-    }
-  }, [conversationId, socket, isConnected]);
-
-  const fetchConversations = useCallback(async (projectId = null) => {
+  /**
+   * Fetch a specific chat conversation
+   */
+  const fetchChat = useCallback(async (id) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await chatAPI.getConversations(projectId);
-      setConversations(response.data.conversations);
+      const response = await chatAPI.getConversation(id);
+      // Backend returns { success: true, data: { conversation: chat } }
+      const chat = response.data.conversation || response.data;
+
+      setCurrentChat(chat);
+      setMessages(chat.messages || []);
+
+      return chat;
     } catch (err) {
-      console.error("Fetch conversations error:", err);
-      setError(err.response?.data?.message || "Failed to fetch conversations");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchConversation = useCallback(async (id) => {
-    try {
-      const response = await chatAPI.getConversationById(id);
-      setCurrentConversation(response.data.conversation);
-      return response.data.conversation;
-    } catch (err) {
-      console.error("Fetch conversation error:", err);
-      throw err;
-    }
-  }, []);
-
-  const fetchMessages = useCallback(async (id) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await chatAPI.getMessages(id);
-      setMessages(response.data.messages);
-    } catch (err) {
-      console.error("Fetch messages error:", err);
-      setError(err.response?.data?.message || "Failed to fetch messages");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const createConversation = useCallback(async (data) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await chatAPI.createConversation(data);
-      setConversations((prev) => [response.data.conversation, ...prev]);
-      return response.data.conversation;
-    } catch (err) {
-      console.error("Create conversation error:", err);
-      setError(err.response?.data?.message || "Failed to create conversation");
+      console.error("Fetch chat error:", err);
+      const errorMessage = err.response?.data?.message || "Failed to fetch conversation";
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  /**
+   * Fetch chat history for a project
+   */
+  const fetchChatHistory = useCallback(async (projId) => {
+    console.log("fetchChatHistory called with projectId:", projId);
+    setIsLoadingHistory(true);
+    setError(null);
+
+    try {
+      const response = await chatAPI.getChatHistory(projId);
+      console.log("Chat history API response:", response);
+      console.log("Response structure:", {
+        hasData: !!response.data,
+        hasChats: !!response.data?.chats,
+        chatsType: typeof response.data?.chats,
+        chatsLength: Array.isArray(response.data?.chats) ? response.data.chats.length : 'not an array'
+      });
+
+      // Backend returns { success: true, data: { chats: [...], pagination: {...} } }
+      const chats = response.data?.chats || response.data || [];
+      console.log("Extracted chats:", chats);
+      console.log("Setting chatHistory to:", chats.length, "chats");
+      setChatHistory(chats);
+      return chats;
+    } catch (err) {
+      console.error("Fetch chat history error:", err);
+      console.error("Error response:", err.response);
+      const errorMessage = err.response?.data?.message || "Failed to fetch chat history";
+      setError(errorMessage);
+      // Don't show toast for history fetch errors
+      throw err;
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  /**
+   * Send a message in the chat
+   */
   const sendMessage = useCallback(
-    async (content, mode = "general") => {
-      if (!conversationId || !content.trim()) return;
+    async (content, conversationType = "general") => {
+      if (!projectId || !content.trim()) {
+        toast.error("Project ID and message content are required");
+        return;
+      }
 
       setIsSending(true);
       setError(null);
 
-      const tempMessage = {
-        _id: `temp-${Date.now()}`,
-        content,
-        sender: "user",
+      // Add temporary user message to UI
+      const tempUserMessage = {
+        _id: `temp-user-${Date.now()}`,
+        role: "user",
+        content: content.trim(),
         createdAt: new Date(),
         isTemp: true,
       };
 
-      setMessages((prev) => [...prev, tempMessage]);
+      setMessages((prev) => [...prev, tempUserMessage]);
 
       try {
-        if (socket && isConnected) {
-          socket.emit("send_message", {
-            conversationId,
-            content,
-            mode,
-          });
-        } else {
-          const response = await chatAPI.sendMessage(
-            conversationId,
-            content,
-            mode
-          );
+        const response = await chatAPI.sendMessage(
+          projectId,
+          content.trim(),
+          conversationType,
+          chatId
+        );
 
-          setMessages((prev) =>
-            prev.filter((msg) => msg._id !== tempMessage._id)
-          );
+        const { chatId: newChatId, message: aiMessage, messageId } = response.data;
 
-          setMessages((prev) => [
-            ...prev,
-            response.data.userMessage,
-            response.data.aiMessage,
-          ]);
+        // Remove temp message and add both user and AI messages
+        setMessages((prev) => {
+          const filtered = prev.filter((msg) => !msg.isTemp);
+          return [
+            ...filtered,
+            {
+              _id: messageId,
+              role: "user",
+              content: content.trim(),
+              createdAt: new Date(),
+            },
+            {
+              _id: `ai-${messageId}`,
+              role: "assistant",
+              content: aiMessage,
+              createdAt: new Date(),
+              metadata: response.data.metadata,
+            },
+          ];
+        });
+
+        // Update current chat with new chatId if this was the first message
+        if (!chatId && newChatId) {
+          setCurrentChat({ _id: newChatId, title: "New Conversation" });
+          lastFetchedChatId.current = newChatId;
         }
+
+        // Refresh chat history to show the updated conversation
+        if (projectId) {
+          fetchChatHistory(projectId);
+        }
+
+        return { chatId: newChatId, message: aiMessage };
       } catch (err) {
         console.error("Send message error:", err);
-        setError(err.response?.data?.message || "Failed to send message");
-        toast.error("Failed to send message");
 
-        setMessages((prev) =>
-          prev.filter((msg) => msg._id !== tempMessage._id)
-        );
+        // Remove temp message
+        setMessages((prev) => prev.filter((msg) => !msg.isTemp));
+
+        const errorMessage = err.response?.data?.message || "Failed to send message";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        throw err;
       } finally {
         setIsSending(false);
       }
     },
-    [conversationId, socket, isConnected]
+    [projectId, chatId, fetchChatHistory]
   );
 
-  const regenerateResponse = useCallback(
-    async (messageId) => {
-      setIsLoading(true);
-      setError(null);
+  /**
+   * Delete a chat conversation
+   */
+  const deleteChat = useCallback(async (id) => {
+    try {
+      await chatAPI.deleteConversation(id);
 
-      try {
-        const response = await chatAPI.regenerateResponse(
-          conversationId,
-          messageId
-        );
-
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === messageId ? response.data.message : msg
-          )
-        );
-
-        toast.success("Response regenerated");
-      } catch (err) {
-        console.error("Regenerate response error:", err);
-        setError(
-          err.response?.data?.message || "Failed to regenerate response"
-        );
-        toast.error("Failed to regenerate response");
-      } finally {
-        setIsLoading(false);
+      if (currentChat?._id === id) {
+        setCurrentChat(null);
+        setMessages([]);
       }
-    },
-    [conversationId]
-  );
 
-  const deleteConversation = useCallback(
-    async (id) => {
-      try {
-        await chatAPI.deleteConversation(id);
-        setConversations((prev) => prev.filter((conv) => conv._id !== id));
+      setChatHistory((prev) => prev.filter((chat) => chat._id !== id));
+      toast.success("Conversation deleted");
+    } catch (err) {
+      console.error("Delete chat error:", err);
+      const errorMessage = err.response?.data?.message || "Failed to delete conversation";
+      toast.error(errorMessage);
+      throw err;
+    }
+  }, [currentChat]);
 
-        if (currentConversation?._id === id) {
-          setCurrentConversation(null);
-          setMessages([]);
-        }
+  /**
+   * Archive a chat conversation
+   */
+  const archiveChat = useCallback(async (id) => {
+    try {
+      await chatAPI.archiveConversation(id);
 
-        toast.success("Conversation deleted");
-      } catch (err) {
-        console.error("Delete conversation error:", err);
-        toast.error("Failed to delete conversation");
-        throw err;
-      }
-    },
-    [currentConversation]
-  );
+      setChatHistory((prev) =>
+        prev.map((chat) =>
+          chat._id === id ? { ...chat, archived: true } : chat
+        )
+      );
 
-  const deleteMessage = useCallback(
-    async (messageId) => {
-      try {
-        await chatAPI.deleteMessage(conversationId, messageId);
-        setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-        toast.success("Message deleted");
-      } catch (err) {
-        console.error("Delete message error:", err);
-        toast.error("Failed to delete message");
-        throw err;
-      }
-    },
-    [conversationId]
-  );
+      toast.success("Conversation archived");
+    } catch (err) {
+      console.error("Archive chat error:", err);
+      toast.error("Failed to archive conversation");
+      throw err;
+    }
+  }, []);
 
-  const updateConversationTitle = useCallback(
-    async (id, title) => {
-      try {
-        const response = await chatAPI.updateConversationTitle(id, title);
+  /**
+   * Pin a message
+   */
+  const pinMessage = useCallback(async (messageId) => {
+    if (!chatId) return;
 
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv._id === id ? response.data.conversation : conv
-          )
-        );
+    try {
+      await chatAPI.pinMessage(chatId, messageId);
 
-        if (currentConversation?._id === id) {
-          setCurrentConversation(response.data.conversation);
-        }
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, pinned: true } : msg
+        )
+      );
 
-        toast.success("Title updated");
-      } catch (err) {
-        console.error("Update title error:", err);
-        toast.error("Failed to update title");
-        throw err;
-      }
-    },
-    [currentConversation]
-  );
+      toast.success("Message pinned");
+    } catch (err) {
+      console.error("Pin message error:", err);
+      toast.error("Failed to pin message");
+      throw err;
+    }
+  }, [chatId]);
 
+  /**
+   * Star a message
+   */
+  const starMessage = useCallback(async (messageId) => {
+    if (!chatId) return;
+
+    try {
+      await chatAPI.starMessage(chatId, messageId);
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, starred: true } : msg
+        )
+      );
+
+      toast.success("Message starred");
+    } catch (err) {
+      console.error("Star message error:", err);
+      toast.error("Failed to star message");
+      throw err;
+    }
+  }, [chatId]);
+
+  /**
+   * Rate a message
+   */
+  const rateMessage = useCallback(async (messageId, rating) => {
+    if (!chatId) return;
+
+    try {
+      await chatAPI.rateMessage(chatId, messageId, rating);
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, rating } : msg
+        )
+      );
+
+      toast.success("Message rated");
+    } catch (err) {
+      console.error("Rate message error:", err);
+      toast.error("Failed to rate message");
+      throw err;
+    }
+  }, [chatId]);
+
+  /**
+   * Clear messages from state
+   */
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, []);
 
+  /**
+   * Clear error
+   */
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
+  // Fetch chat conversation when chatId changes
+  useEffect(() => {
+    // Only fetch if chatId changed and we don't already have messages for this chat
+    if (chatId && chatId !== lastFetchedChatId.current) {
+      lastFetchedChatId.current = chatId;
+      fetchChat(chatId);
+    } else if (!chatId) {
+      // Clear messages when there's no chatId (new conversation)
+      setMessages([]);
+      setCurrentChat(null);
+      lastFetchedChatId.current = null;
+    }
+  }, [chatId, fetchChat]);
+
+  // Fetch chat history when projectId changes
+  useEffect(() => {
+    if (projectId) {
+      fetchChatHistory(projectId);
+    }
+  }, [projectId, fetchChatHistory]);
+
   return {
-    socket,
-    isConnected,
-    conversations,
-    currentConversation,
+    // State
+    currentChat,
     messages,
+    chatHistory,
     isLoading,
+    isLoadingHistory,
     isSending,
-    isTyping,
     error,
-    fetchConversations,
-    fetchConversation,
-    fetchMessages,
-    createConversation,
+
+    // Actions
+    fetchChat,
+    fetchChatHistory,
     sendMessage,
-    regenerateResponse,
-    deleteConversation,
-    deleteMessage,
-    updateConversationTitle,
+    deleteChat,
+    archiveChat,
+    pinMessage,
+    starMessage,
+    rateMessage,
     clearMessages,
     clearError,
-    setCurrentConversation,
+    setCurrentChat,
   };
 };
 

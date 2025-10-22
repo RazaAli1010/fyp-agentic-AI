@@ -28,7 +28,7 @@ const projectVersionSchema = new mongoose.Schema(
     },
     changeType: {
       type: String,
-      enum: ['major', 'minor', 'patch', 'manual'],
+      enum: ['major', 'minor', 'patch', 'manual', 'automatic'],
       default: 'manual'
     },
     changedFields: [{
@@ -208,6 +208,4 @@ projectVersionSchema.statics.cleanupOldVersions = async function(projectId, keep
   return { deleted: result.deletedCount };
 };
 
-const ProjectVersion = mongoose.model('ProjectVersion', projectVersionSchema);
-
-module.exports = ProjectVersion;
+module.exports = mongoose.models.ProjectVersion || mongoose.model('ProjectVersion', projectVersionSchema);

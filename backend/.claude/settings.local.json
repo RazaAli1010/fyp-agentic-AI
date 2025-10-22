@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Raza Ali/Documents/final-year-project/project/ai-startup-platform/frontend/src/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

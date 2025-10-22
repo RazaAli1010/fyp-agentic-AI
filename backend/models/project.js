@@ -526,8 +526,8 @@ projectSchema.statics.getProjectStats = async function(userId) {
     {
       $match: {
         $or: [
-          { userId: mongoose.Types.ObjectId(userId) },
-          { 'collaborators.userId': mongoose.Types.ObjectId(userId) }
+          { userId: new mongoose.Types.ObjectId(userId) },
+          { 'collaborators.userId': new mongoose.Types.ObjectId(userId) }
         ]
       }
     },
@@ -590,6 +590,4 @@ projectSchema.statics.searchProjects = async function(userId, searchTerm, limit 
     .lean();
 };
 
-const Project = mongoose.model('Project', projectSchema);
-
-module.exports = Project;
+module.exports = mongoose.models.Project || mongoose.model('Project', projectSchema);

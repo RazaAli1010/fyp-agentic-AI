@@ -23,7 +23,6 @@ const DEFAULT_PARAMS = {
   maxTokens: config.claude.maxTokens,
   temperature: config.claude.temperature,
   topP: 1,
-  topK: 0,
 };
 
 /**
@@ -206,9 +205,9 @@ const tokenUsageTracker = {
       totalTokens: this.totalInputTokens + this.totalOutputTokens,
       requestCount: this.requestCount,
       avgInputTokens:
-        Math.round(this.totalInputTokens / this.requestCount) || 0,
+        this.requestCount > 0 ? Math.round(this.totalInputTokens / this.requestCount) : 0,
       avgOutputTokens:
-        Math.round(this.totalOutputTokens / this.requestCount) || 0,
+        this.requestCount > 0 ? Math.round(this.totalOutputTokens / this.requestCount) : 0,
     };
   },
 
@@ -227,19 +226,23 @@ const rateLimiter = {
   maxRequestsPerMinute: 50,
 
   canMakeRequest() {
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-
-    // Remove old requests
-    this.requests = this.requests.filter(
-      (timestamp) => timestamp > oneMinuteAgo
-    );
-
+    this.cleanup(); // Clean up old requests before checking
     return this.requests.length < this.maxRequestsPerMinute;
   },
 
   recordRequest() {
+    this.cleanup(); // Clean up before adding new request
     this.requests.push(Date.now());
+  },
+
+  cleanup() {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+
+    // Remove old requests to prevent memory leak
+    this.requests = this.requests.filter(
+      (timestamp) => timestamp > oneMinuteAgo
+    );
   },
 
   getWaitTime() {

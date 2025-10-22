@@ -8,6 +8,7 @@ import ResetPassword from "@components/auth/ResetPassword";
 import Profile from "@components/auth/Profile";
 
 import Dashboard from "@components/project/dashboard";
+import ProjectList from "@components/project/ProjectList";
 import ProjectCard from "@components/project/projectcard";
 import CreateProject from "@components/project/createproject";
 import ProjectDetails from "@components/project/projectdetails";
@@ -101,7 +102,7 @@ const routes = [
     path: "/projects",
     element: (
       <ProtectedRoute>
-        <Dashboard />
+        <ProjectList />
       </ProtectedRoute>
     ),
   },
@@ -138,7 +139,7 @@ const routes = [
     ),
   },
   {
-    path: "/chat/:conversationId",
+    path: "/chat/:chatId",
     element: (
       <ProtectedRoute>
         <ChatInterface />

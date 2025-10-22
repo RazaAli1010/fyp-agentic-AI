@@ -129,12 +129,12 @@ chatHistorySchema.index({ lastMessageAt: -1 });
 
 // Virtual for getting only user messages
 chatHistorySchema.virtual("userMessages").get(function () {
-  return this.messages.filter((msg) => msg.role === "user");
+  return this.messages ? this.messages.filter((msg) => msg.role === "user") : [];
 });
 
 // Virtual for getting only assistant messages
 chatHistorySchema.virtual("assistantMessages").get(function () {
-  return this.messages.filter((msg) => msg.role === "assistant");
+  return this.messages ? this.messages.filter((msg) => msg.role === "assistant") : [];
 });
 
 // Pre-save middleware to update aggregated fields
@@ -248,7 +248,7 @@ chatHistorySchema.methods.generateSummary = function () {
 // Static method to get user's chat statistics
 chatHistorySchema.statics.getUserChatStats = async function (userId) {
   const stats = await this.aggregate([
-    { $match: { userId: mongoose.Types.ObjectId(userId) } },
+    { $match: { userId: new mongoose.Types.ObjectId(userId) } },
     {
       $group: {
         _id: null,
@@ -315,6 +315,4 @@ chatHistorySchema.statics.cleanupOldChats = async function (daysOld = 90) {
   return result;
 };
 
-const ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);
-
-module.exports = ChatHistory;
+module.exports = mongoose.models.ChatHistory || mongoose.model("ChatHistory", chatHistorySchema);

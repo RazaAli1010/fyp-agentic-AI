@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
+      index: true,
       minlength: [3, 'Username must be at least 3 characters long'],
       maxlength: [30, 'Username cannot exceed 30 characters'],
       match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
@@ -21,6 +22,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
+      index: true,
       match: [
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         'Please provide a valid email address'
@@ -60,7 +62,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false
     },
-    
+
+    passwordChangedAt: {
+      type: Date,
+      select: false
+    },
+
     failedLoginAttempts: {
       type: Number,
       default: 0
@@ -88,7 +95,7 @@ const userSchema = new mongoose.Schema(
     authenticationLogs: [{
       action: {
         type: String,
-        enum: ['login', 'logout', 'failed_login', 'password_reset', 'password_change'],
+        enum: ['login', 'logout', 'failed_login', 'password_reset', 'password_change', 'registration'],
         required: true
       },
       ipAddress: String,
@@ -120,8 +127,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes for performance
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ accountLockedUntil: 1 });
 
 // Virtual for checking if account is locked
@@ -137,6 +142,24 @@ userSchema.pre('save', async function(next) {
   }
 
   try {
+    // Save old password to history before hashing new one
+    if (this.isModified('password') && !this.isNew) {
+      // Get the current password from database before it's overwritten
+      const currentUser = await this.constructor.findById(this._id).select('+password');
+      if (currentUser && currentUser.password) {
+        if (!this.passwordHistory) {
+          this.passwordHistory = [];
+        }
+        // Keep only last 5 passwords
+        if (this.passwordHistory.length >= 5) {
+          this.passwordHistory.shift();
+        }
+        this.passwordHistory.push(currentUser.password);
+      }
+      // Update passwordChangedAt timestamp
+      this.passwordChangedAt = Date.now();
+    }
+
     // Generate salt and hash password
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -361,6 +384,4 @@ userSchema.methods.toJSON = function() {
   return user;
 };
 
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

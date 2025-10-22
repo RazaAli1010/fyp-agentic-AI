@@ -12,7 +12,15 @@ const {
  */
 router.use(authenticate);
 
-router.post("/message", validateChatMessage, chatController.sendMessage);
+// Debugging middleware for /message endpoint
+router.post("/message", (req, res, next) => {
+  console.log("\n🔵 ROUTE HIT: POST /api/chat/message");
+  console.log("📍 Request path:", req.path);
+  console.log("📍 Request method:", req.method);
+  console.log("🔐 User authenticated:", !!req.user);
+  console.log("📦 Body keys:", Object.keys(req.body));
+  next();
+}, validateChatMessage, chatController.sendMessage);
 
 router.post(
   "/investor-objection",

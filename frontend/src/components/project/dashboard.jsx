@@ -11,6 +11,7 @@ import {
   FiArrowRight,
   FiBarChart2
 } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import Button from '@components/common/Button';
 import Card from '@components/common/Card';
 import Loader from '@components/common/Loader';
@@ -93,6 +94,18 @@ const Dashboard = () => {
   ];
 
   const maxStageCount = Math.max(...stageData.map(s => s.count), 1);
+
+  // Handler for AI Assistant button
+  const handleAIAssistantClick = () => {
+    if (projects.length === 0) {
+      toast.error('Please create a project first to use AI Assistant');
+      return;
+    }
+
+    // Use the most recently updated project
+    const recentProject = projects[0];
+    navigate(`/chat?projectId=${recentProject._id}`);
+  };
 
   if (isLoading && !projects.length) {
     return (
@@ -327,7 +340,7 @@ const Dashboard = () => {
             </button>
 
             <button
-              onClick={() => navigate('/chat')}
+              onClick={handleAIAssistantClick}
               className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl hover:from-orange-100 hover:to-pink-100 transition-all duration-200"
             >
               <div className="p-2 bg-white rounded-lg">
